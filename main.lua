@@ -110,7 +110,9 @@ end
 
 function beerbomb()
     for i=1,#beercontainer do
-        love.graphics.draw(beer, beercontainer[i][1],beercontainer[i][2])
+        if beercontainer[i][3] then
+            love.graphics.draw(beer, beercontainer[i][1],beercontainer[i][2])
+        end
     end
 end
 
@@ -118,7 +120,7 @@ function AI()
     local qtime = love.timer.getTime()
     if #beercontainer <= MAX_BEER and ((qtime - time) > bombInterval)  then
         time = love.timer.getTime()
-        table.insert(beercontainer, {ai.x, ai.y+40})
+        table.insert(beercontainer, {ai.x, ai.y+40, true})
         soundbank.dropdown:play()
     end
     strategy[strategyseq[level]]()
@@ -140,15 +142,17 @@ end
 
 function checkCollision()
     for i=1, #beercontainer do
-        if beercontainer[i][2] <= s_height + 160 then
+        if beercontainer[i][3] and beercontainer[i][2] <= s_height + 160 then
             if beercontainer[i][2] >=  buckets.y and beercontainer[i][1]  >= buckets.x 
                 and beercontainer[i][1] <= buckets.x + 60     then
-                table.remove(beercontainer,i)
+                
+                beercontainer[i][3] = false
                 points = points + 2* level
                 soundbank.gotcha:play()
                 -- AFTER 1000 POINTS LIFE UP
             end
         else 
+            if beercontainer[i][3] then
             -- FIX FLASH SCREEN
             -- CHECK IF GAME IS OVER
             -- LOWER DIFFICULTY
@@ -156,9 +160,10 @@ function checkCollision()
             --        if(level >0) then
             --              level = level -1
             --            end
-            table.remove(beercontainer,i)
-            life = life -1
-            soundbank.boom:play()
+                beercontainer[i][3] = false
+                life = life -1
+                soundbank.boom:play()
+            end
         end
     end
 end
@@ -169,9 +174,9 @@ function love.update(dt)
         if (mouse_x > 30 and mouse_x <= s_width - 20) then
             buckets.x = mouse_x
         end
+        AI()
         beerUpdate()
         checkCollision()
-        AI()
         intervalTime = intervalTime - dt
     else
         increaseDifficulty()
