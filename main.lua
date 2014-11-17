@@ -81,16 +81,17 @@ function bucketInit()
     buckets.x = s_width/2
 end
 
-function increaseDifficulty()
+function increaseDifficulty(n)
+    -- Refactor x,y
+    -- bug level 4
     beercontainer = {}
     bombInterval = bombInterval - 0.1*level
     soundbank.intermission:play()
     if (level < MAX_LEVEL) then
-        level = level +1
+        level = level + n
     end
     love.timer.sleep(1)
     intervalTime = INTERVAL
-    print("TIMER")
 end
 
 function bucketDraw(number)
@@ -156,11 +157,10 @@ function checkCollision()
         else 
             -- FIX FLASH SCREEN
             -- CHECK IF GAME IS OVER
-            -- LOWER DIFFICULTY
             -- FIX BUG POINTS
-            --        if(level >0) then
-            --              level = level -1
-            --            end
+                    if(level >1) then
+                            increaseDifficulty(-1)
+                        end
             table.remove(beercontainer,i)
             nbeer = nbeer -1
             life = life -1
@@ -181,6 +181,6 @@ function love.update(dt)
         checkCollision()
         intervalTime = intervalTime - dt
     else
-        increaseDifficulty()
+        increaseDifficulty(1)
     end
 end
