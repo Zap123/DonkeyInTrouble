@@ -21,9 +21,9 @@ end
 function gameInit()
     bombInterval = 1
     MAX_BEER = 10
-    MAX_LEVEL = 3
+    MAX_LEVEL = 10
     INTERVAL = 10
-    strategyseq  = {1,1,1}
+    strategyseq  = {1,1,1, 2,2,2,1,1,1,2}
     intervalTime = INTERVAL
     life = 3
     time = love.timer.getTime()
@@ -71,7 +71,7 @@ function computerInit()
     end
 
     strategy[2] = function() 
-        ai.x = math.abs(math.cos(os.time()) * (s_width))
+        ai.x = 50 + math.abs(math.cos(os.time()) * (s_width - 50))
     end
 end
 
@@ -90,6 +90,7 @@ function increaseDifficulty()
     end
     love.timer.sleep(1)
     intervalTime = INTERVAL
+    print("TIMER")
 end
 
 function bucketDraw(number)
@@ -139,14 +140,18 @@ function love.draw()
 end
 
 function checkCollision()
-    for i=1, #beercontainer do
+    
+    local nbeer = #beercontainer
+    local i = 1
+    while (i <= nbeer) do
         if beercontainer[i][2] <= s_height + 160 then
             if beercontainer[i][2] >=  buckets.y and beercontainer[i][1]  >= buckets.x 
                 and beercontainer[i][1] <= buckets.x + 60     then
-                table.remove(beercontainer,i)
                 points = points + 2* level
-                soundbank.gotcha:play()
+                table.remove(beercontainer,i)
+                nbeer = nbeer -1
                 -- AFTER 1000 POINTS LIFE UP
+                soundbank.gotcha:play()
             end
         else 
             -- FIX FLASH SCREEN
@@ -157,9 +162,11 @@ function checkCollision()
             --              level = level -1
             --            end
             table.remove(beercontainer,i)
+            nbeer = nbeer -1
             life = life -1
             soundbank.boom:play()
         end
+       i = i + 1
     end
 end
 
@@ -169,9 +176,9 @@ function love.update(dt)
         if (mouse_x > 30 and mouse_x <= s_width - 20) then
             buckets.x = mouse_x
         end
+        AI()
         beerUpdate()
         checkCollision()
-        AI()
         intervalTime = intervalTime - dt
     else
         increaseDifficulty()
