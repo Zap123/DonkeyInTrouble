@@ -1,7 +1,8 @@
 local donkey, w_height, w_width, s_height, s_width, buckets, life, points, remainingPointsUntilBonus
-local ai, level, soundbank, strategy, strategyseq, intervalTime
-local beer, beercontainer, time, MAX_LEVEL, INTERVAL, MAX_BEER, bombInterval
+local ai, level, soundbank, strategy, strategyseq, intervalTime, beersonscreen
+local beer, beercontainer, time, MAX_LEVEL, INTERVAL, MAX_BEER, beerInterval
 -- TODO: MAIN SCREEN
+-- FIX : GAMEPLAY
 function love.load()
     love.window.setTitle('Donkey in Trouble - Alpha')
     love.mouse.setVisible(false)
@@ -19,15 +20,15 @@ end
 
 function gameInit()
     remainingPointsUntilBonus = 0
-    bombInterval = 1
+    beerInterval = 1
     MAX_BEER = 10
     MAX_LEVEL = 10
-    INTERVAL = 100
+    INTERVAL = 10
     strategyseq  = {1,1,1, 2,2,2,1,1,1,2}
     intervalTime = INTERVAL
     life = 3
     time = love.timer.getTime()
-    level = 2
+    level = 1
     points = 0
 end
 
@@ -77,6 +78,7 @@ end
 
 function beercontainerInit()
     beercontainer = {}
+    beersonscreen = 0
 end
 
 function bucketInit()
@@ -86,14 +88,12 @@ function bucketInit()
 end
 
 function setDifficulty(n)
-    bombInterval = bombInterval - 0.1*level
+    beerInterval = beerInterval - 0.05*level
     beercontainerInit()
     soundbank.intermission:play()
     if (level < MAX_LEVEL) then
         level = level + n
     end
-    print("ERASED")
-    print(#beercontainer)
     love.timer.sleep(1)
     intervalTime = INTERVAL
 end
@@ -108,14 +108,12 @@ end
 
 function newBomb()
     table.insert(beercontainer, {x = ai.x, y = ai.y +40})
+    beersonscreen = beersonscreen +1
 end
 
 function removeBomb(bomb)
     table.remove(beercontainer, bomb)
-end
-
-function hasMoreBeer()
-    return #beercontainer < MAX_BEER
+    beersonscreen = beersonscreen -1
 end
 
 function bgtext()
@@ -137,7 +135,7 @@ end
 function AI()
     -- multiple bomb
     local qtime = love.timer.getTime()
-    if hasMoreBeer() and ((qtime - time) > 0.01)  then
+    if beersonscreen < MAX_BEER and ((qtime - time) > beerInterval)  then
         time = love.timer.getTime()
         newBomb()
         soundbank.dropdown:play()
@@ -148,7 +146,7 @@ end
 function beerPhysics()
     local i = 1
     while (i <= #beercontainer) do
-        beercontainer[i].y = beercontainer[i].y + 1
+        beercontainer[i].y = beercontainer[i].y + 3
         i = i + 1
     end
 end
@@ -166,8 +164,6 @@ function checkCollision()
     local i = 1
     local nbeer = #beercontainer
     while (i <= nbeer) do
-        print(i)
-        print(nbeer)
         if beercontainer[i].y <= s_height + 160 then
             if beercontainer[i].y >=  buckets.y and beercontainer[i].x  >= buckets.x 
                 and beercontainer[i].x <= buckets.x + 60     then
@@ -175,8 +171,12 @@ function checkCollision()
                 remainingPointsUntilBonus = remainingPointsUntilBonus + level
                 removeBomb(i)
                 nbeer = nbeer -1
-                if (remainingPointsUntilBonus >= 1000 and life < 3) then
-                    life = life +1
+                print(remainingPointsUntilBonus)
+                -- Check 3000
+                if (remainingPointsUntilBonus >= 1000) then
+                    if(life < 3) then
+                        life = life +1
+                    end
                     remainingPointsUntilBonus = 0
                 end
                 soundbank.gotcha:play()
@@ -190,6 +190,7 @@ function checkCollision()
             soundbank.boom:play()
             if(level >1) then
                 setDifficulty(-1)
+                break
             end
         end
         i = i + 1
@@ -203,8 +204,10 @@ function love.update(dt)
             buckets.x = mouse_x
         end
         AI()
-        beerPhysics()
-        checkCollision()
+        if(beersonscreen > 0) then
+            beerPhysics()
+            checkCollision()
+        end
         intervalTime = intervalTime - dt
     else
         setDifficulty(1)
