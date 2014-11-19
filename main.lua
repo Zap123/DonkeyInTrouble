@@ -22,12 +22,12 @@ function gameInit()
     bombInterval = 1
     MAX_BEER = 10
     MAX_LEVEL = 10
-    INTERVAL = 10
+    INTERVAL = 100
     strategyseq  = {1,1,1, 2,2,2,1,1,1,2}
     intervalTime = INTERVAL
     life = 3
     time = love.timer.getTime()
-    level = 1
+    level = 2
     points = 0
 end
 
@@ -87,13 +87,13 @@ end
 
 function setDifficulty(n)
     bombInterval = bombInterval - 0.1*level
-    --PF
-    print(level)
     beercontainerInit()
     soundbank.intermission:play()
     if (level < MAX_LEVEL) then
         level = level + n
     end
+    print("ERASED")
+    print(#beercontainer)
     love.timer.sleep(1)
     intervalTime = INTERVAL
 end
@@ -137,7 +137,7 @@ end
 function AI()
     -- multiple bomb
     local qtime = love.timer.getTime()
-    if hasMoreBeer() and ((qtime - time) > bombInterval)  then
+    if hasMoreBeer() and ((qtime - time) > 0.01)  then
         time = love.timer.getTime()
         newBomb()
         soundbank.dropdown:play()
@@ -148,7 +148,7 @@ end
 function beerPhysics()
     local i = 1
     while (i <= #beercontainer) do
-        beercontainer[i].y = beercontainer[i].y + 5
+        beercontainer[i].y = beercontainer[i].y + 1
         i = i + 1
     end
 end
@@ -166,6 +166,8 @@ function checkCollision()
     local i = 1
     local nbeer = #beercontainer
     while (i <= nbeer) do
+        print(i)
+        print(nbeer)
         if beercontainer[i].y <= s_height + 160 then
             if beercontainer[i].y >=  buckets.y and beercontainer[i].x  >= buckets.x 
                 and beercontainer[i].x <= buckets.x + 60     then
