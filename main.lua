@@ -109,7 +109,7 @@ function bucketDraw(number)
 end
 
 function newBomb()
-    print("new : tail %n") 
+    -- print("new : tail %n") 
     iteratortail = (iteratortail + 1) %(MAX_BEER) 
     if iteratortail == 0 then iteratortail = 1 end
     beercontainer[iteratortail].thrown = true
@@ -119,7 +119,7 @@ function newBomb()
 end
 
 function removeBomb()
-    print("rm : head %d")
+    -- print("rm : head %d")
     beercontainer[iteratortail].thrown = false
     iteratorhead = (iteratorhead +1) %(MAX_BEER)
     if iteratorhead == 0 then iteratorhead = 1 end
@@ -152,6 +152,7 @@ function beerDraw()
 end
 
 function AI()
+    -- multiple bomb
     local qtime = love.timer.getTime()
     if emptycontainer() and ((qtime - time) > bombInterval)  then
         time = love.timer.getTime()
@@ -184,9 +185,12 @@ function checkCollision()
         if beercontainer[i].y <= s_height + 160 then
             if beercontainer[i].y >=  buckets.y and beercontainer[i].x  >= buckets.x 
                 and beercontainer[i].x <= buckets.x + 60     then
-                points = points + 2* level
+                points = points + 2 * level
                 removeBomb()
-                -- AFTER 1000 POINTS LIFE UP
+                -- check 2000
+                if (points % 1000 == 0 and life < 3) then
+                    life = life +1
+                end
                 soundbank.gotcha:play()
             end
         else 
