@@ -1,5 +1,5 @@
-local donkey, w_height, w_width, s_height, s_width, buckets, life, points
-local ai, level, soundbank, strategy, strategyseq, intervalTime, iteratortail, iteratorhead
+local donkey, w_height, w_width, s_height, s_width, buckets, life, points, remainingPointsUntilBonus
+local ai, level, soundbank, strategy, strategyseq, intervalTime
 local beer, beercontainer, time, MAX_LEVEL, INTERVAL, MAX_BEER, bombInterval
 -- TODO: MAIN SCREEN
 function love.load()
@@ -18,6 +18,7 @@ function love.load()
 end
 
 function gameInit()
+    remainingPointsUntilBonus = 0
     bombInterval = 1
     MAX_BEER = 10
     MAX_LEVEL = 10
@@ -46,10 +47,10 @@ function backgroundGen(x,y)
 end
 
 function computerInit() 
+    beercontainerInit()
     strategy = {}
     donkey = love.graphics.newImage('objects/donkey.png')
     beer = love.graphics.newImage('objects/beer.png')
-    beercontainerInit()
     ai = {}
     ai.x = 60
     ai.y = 90
@@ -75,11 +76,7 @@ function computerInit()
 end
 
 function beercontainerInit()
-    iteratorInit()
     beercontainer = {}
-    for i=1, MAX_BEER do
-        beercontainer[i] = {x = 0, y = 0, thrown = false}
-    end
 end
 
 function bucketInit()
@@ -88,9 +85,10 @@ function bucketInit()
     buckets.x = s_width/2
 end
 
-function increaseDifficulty(n)
+function setDifficulty(n)
     bombInterval = bombInterval - 0.1*level
     --PF
+    print(level)
     beercontainerInit()
     soundbank.intermission:play()
     if (level < MAX_LEVEL) then
@@ -109,30 +107,15 @@ function bucketDraw(number)
 end
 
 function newBomb()
-    -- print("new : tail %n") 
-    iteratortail = (iteratortail + 1) %(MAX_BEER) 
-    if iteratortail == 0 then iteratortail = 1 end
-    beercontainer[iteratortail].thrown = true
-    beercontainer[iteratortail].x = ai.x
-    beercontainer[iteratortail].y = ai.y + 40
-    print(iteratortail)
+    table.insert(beercontainer, {x = ai.x, y = ai.y +40})
 end
 
-function removeBomb()
-    -- print("rm : head %d")
-    beercontainer[iteratortail].thrown = false
-    iteratorhead = (iteratorhead +1) %(MAX_BEER)
-    if iteratorhead == 0 then iteratorhead = 1 end
-    print(iteratorhead)
+function removeBomb(bomb)
+    table.remove(beercontainer, bomb)
 end
 
-function iteratorInit()
-    iteratorhead = 1 
-    iteratortail = 0
-end
-
-function emptycontainer()
-    return iteratorhead ~= (iteratortail %MAX_BEER) 
+function hasMoreBeer()
+    return #beercontainer < MAX_BEER
 end
 
 function bgtext()
@@ -144,8 +127,8 @@ end
 
 
 function beerDraw()
-    local i = iteratorhead 
-    while (i <= iteratortail and beercontainer[i].thrown) do
+    local i = 1 
+    while (i <= #beercontainer) do
         love.graphics.draw(beer, beercontainer[i].x,beercontainer[i].y)
         i = i + 1
     end
@@ -154,7 +137,7 @@ end
 function AI()
     -- multiple bomb
     local qtime = love.timer.getTime()
-    if emptycontainer() and ((qtime - time) > bombInterval)  then
+    if hasMoreBeer() and ((qtime - time) > bombInterval)  then
         time = love.timer.getTime()
         newBomb()
         soundbank.dropdown:play()
@@ -163,9 +146,9 @@ function AI()
 end
 
 function beerPhysics()
-    local i = iteratorhead
-    while (i <= iteratortail and beercontainer[i].thrown) do
-        beercontainer[i].y = beercontainer[i].y + 10 
+    local i = 1
+    while (i <= #beercontainer) do
+        beercontainer[i].y = beercontainer[i].y + 5
         i = i + 1
     end
 end
@@ -180,27 +163,31 @@ end
 
 function checkCollision()
 
-    local i = iteratorhead
-    while (i <= iteratortail and beercontainer[i].thrown) do
+    local i = 1
+    local nbeer = #beercontainer
+    while (i <= nbeer) do
         if beercontainer[i].y <= s_height + 160 then
             if beercontainer[i].y >=  buckets.y and beercontainer[i].x  >= buckets.x 
                 and beercontainer[i].x <= buckets.x + 60     then
-                points = points + 2 * level
-                removeBomb()
-                -- check 2000
-                if (points % 1000 == 0 and life < 3) then
+                points = points + level
+                remainingPointsUntilBonus = remainingPointsUntilBonus + level
+                removeBomb(i)
+                nbeer = nbeer -1
+                if (remainingPointsUntilBonus >= 1000 and life < 3) then
                     life = life +1
+                    remainingPointsUntilBonus = 0
                 end
                 soundbank.gotcha:play()
             end
         else 
             -- FIX FLASH SCREEN
             -- CHECK IF GAME IS OVER
-            removeBomb()
+            removeBomb(i)
+            nbeer = nbeer -1
             life = life -1
             soundbank.boom:play()
             if(level >1) then
-                increaseDifficulty(-1)
+                setDifficulty(-1)
             end
         end
         i = i + 1
@@ -218,6 +205,6 @@ function love.update(dt)
         checkCollision()
         intervalTime = intervalTime - dt
     else
-        increaseDifficulty(1)
+        setDifficulty(1)
     end
 end
