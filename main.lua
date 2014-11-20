@@ -2,10 +2,10 @@ local donkey, w_height, w_width, s_height, s_width, buckets, life, points, remai
 local ai, level, soundbank, strategy, strategyseq, intervalTime, beersonscreen
 local beer, beercontainer, time, MAX_LEVEL, INTERVAL, MAX_BEER, beerInterval
 -- TODO: MAIN SCREEN
--- FIX : GAMEPLAY
 function love.load()
     love.window.setTitle('Donkey in Trouble - Alpha')
-    love.mouse.setVisible(false)
+    -- FIX MOUSE LEAVE SCREEN
+    -- love.mouse.setVisible(false)
     w_height = love.graphics.getHeight()
     w_width = love.graphics.getWidth()
     s_height = w_height - 270 
@@ -20,11 +20,11 @@ end
 
 function gameInit()
     remainingPointsUntilBonus = 0
-    beerInterval = 1
-    MAX_BEER = 10
+    beerInterval = 0.6
+    MAX_BEER = 4
     MAX_LEVEL = 10
     INTERVAL = 10
-    strategyseq  = {1,1,1, 2,2,2,1,1,1,2}
+    strategyseq  = {1,2,1,1,1,1,1,1,1,1}
     intervalTime = INTERVAL
     life = 3
     time = love.timer.getTime()
@@ -64,15 +64,19 @@ function computerInit()
         end
 
         if ai.x < to_x then 
-            ai.x = ai.x + level * 2
+            ai.x = ai.x + level * 6
         end
         if ai.x > to_x then 
-            ai.x = ai.x - level * 2
+            ai.x = ai.x - level * 6
         end
     end
 
     strategy[2] = function() 
         ai.x = 50 + math.abs(math.cos(os.time()) * (s_width - 50))
+    end
+
+    strategy[3] = function() 
+        -- TODO
     end
 end
 
@@ -88,18 +92,19 @@ function bucketInit()
 end
 
 function setDifficulty(n)
-    beerInterval = beerInterval - 0.05*level
-    beercontainerInit()
+    print(level)
+    beerInterval = beerInterval - 0.025
+    --beercontainerInit()
     soundbank.intermission:play()
     if (level < MAX_LEVEL) then
         level = level + n
     end
-    love.timer.sleep(1)
     intervalTime = INTERVAL
 end
 
 function bucketDraw(number)
     -- FIX: draw from top to bottom
+    -- FIX: hitbox when change # buckets
     for i=1,number do    
         love.graphics.setColor(245 - i * 20,121,0)
         love.graphics.rectangle("fill", buckets.x,  buckets.y + 30*i, 60, 20)
@@ -108,7 +113,7 @@ end
 
 function newBomb()
     table.insert(beercontainer, {x = ai.x, y = ai.y +40})
-    beersonscreen = beersonscreen +1
+    beersonscreen = beersonscreen +1 
 end
 
 function removeBomb(bomb)
@@ -133,7 +138,7 @@ function beerDraw()
 end
 
 function AI()
-    -- multiple bomb
+    -- fix timing
     local qtime = love.timer.getTime()
     if beersonscreen < MAX_BEER and ((qtime - time) > beerInterval)  then
         time = love.timer.getTime()
@@ -146,7 +151,7 @@ end
 function beerPhysics()
     local i = 1
     while (i <= #beercontainer) do
-        beercontainer[i].y = beercontainer[i].y + 3
+        beercontainer[i].y = beercontainer[i].y + 3 + level
         i = i + 1
     end
 end
@@ -160,7 +165,6 @@ function love.draw()
 end
 
 function checkCollision()
-
     local i = 1
     local nbeer = #beercontainer
     while (i <= nbeer) do
@@ -171,8 +175,6 @@ function checkCollision()
                 remainingPointsUntilBonus = remainingPointsUntilBonus + level
                 removeBomb(i)
                 nbeer = nbeer -1
-                print(remainingPointsUntilBonus)
-                -- Check 3000
                 if (remainingPointsUntilBonus >= 1000) then
                     if(life < 3) then
                         life = life +1
@@ -183,11 +185,16 @@ function checkCollision()
             end
         else 
             -- FIX FLASH SCREEN
-            -- CHECK IF GAME IS OVER
             removeBomb(i)
             nbeer = nbeer -1
             life = life -1
             soundbank.boom:play()
+            if (life == 0) then
+                love.timer.sleep(3)
+                beercontainerInit()
+                gameInit()
+                break
+            end
             if(level >1) then
                 setDifficulty(-1)
                 break
@@ -197,12 +204,16 @@ function checkCollision()
     end
 end
 
-function love.update(dt)
-    if intervalTime > 0 then
+function updateMouse()
         mouse_x = love.mouse.getX()
         if (mouse_x > 30 and mouse_x <= s_width - 20) then
             buckets.x = mouse_x
         end
+end
+
+function love.update(dt)
+    if intervalTime > 0 then
+        updateMouse()
         AI()
         if(beersonscreen > 0) then
             beerPhysics()
@@ -210,6 +221,12 @@ function love.update(dt)
         end
         intervalTime = intervalTime - dt
     else
-        setDifficulty(1)
+        updateMouse()
+        if(beersonscreen == 0) then 
+             setDifficulty(1)
+         else 
+            beerPhysics()
+            checkCollision()
+         end
     end
 end
