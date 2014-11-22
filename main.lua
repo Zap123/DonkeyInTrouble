@@ -4,7 +4,6 @@ local beer, beercontainer, time, MAX_LEVEL, INTERVAL, MAX_BEER, beerInterval
 -- TODO: MAIN SCREEN
 function love.load()
     love.window.setTitle('Donkey in Trouble - Alpha')
-    -- FIX MOUSE LEAVE SCREEN
     -- love.mouse.setVisible(false)
     w_height = love.graphics.getHeight()
     w_width = love.graphics.getWidth()
@@ -205,7 +204,7 @@ end
 
 function updateMouse()
         mouse_x = love.mouse.getX()
-        if (mouse_x > 30 and mouse_x <= s_width - 20) then
+        if (mouse_x > 20 and mouse_x <= s_width - 20) then
             buckets.x = mouse_x
         end
 end
