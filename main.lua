@@ -92,8 +92,7 @@ function bucketInit()
 end
 
 function setDifficulty(n)
-    print(level)
-    beerInterval = beerInterval - 0.025
+    beerInterval = beerInterval - (n/n * 0.025)
     --beercontainerInit()
     soundbank.intermission:play()
     if (level < MAX_LEVEL) then
